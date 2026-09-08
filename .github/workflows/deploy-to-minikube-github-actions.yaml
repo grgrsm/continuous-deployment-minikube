@@ -8,25 +8,33 @@ jobs:
     name: Build Node.js Docker Image and deploy to Minikube
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Start minikube
         uses: medyagh/setup-minikube@master
+        with:
+          driver: docker
 
-      - name: Try the cluster
+      - name: Check cluster
         run: kubectl get pods -A
 
       - name: Build image
         run: |
-          export SHELL=/bin/bash
-          eval $(minikube -p minikube docker-env)
-          docker build -f ./Dockerfile -t devopshint/node-app:latest .
-          echo -n "verifying images:"
-          docker images
+          docker build -t devopshint/node-app:latest .
 
-      - name: Deploy to minikube
+      - name: Load image into Minikube
+        run: |
+          minikube image load devopshint/node-app:latest
+
+      - name: Deploy to Minikube
         run: |
           kubectl apply -f k8s-node-app.yaml
+
+      - name: Check deployment
+        run: |
+          kubectl get pods
+          kubectl get services
 
       - name: Test service URLs
         run: |
